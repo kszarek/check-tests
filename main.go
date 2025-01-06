@@ -16,6 +16,7 @@ func main() {
     repo := os.Getenv("GITHUB_REPOSITORY_NAME")
     sha := os.Getenv("GITHUB_SHA")
     token := os.Getenv("GITHUB_TOKEN")
+		target_url := os.Getenv("GITHUB_TARGET_URL")
 
     // Create a new GitHub client
     ctx := context.Background()
@@ -26,24 +27,25 @@ func main() {
     client := github.NewClient(tc)
 
     // Create a status for the commit
-    createStatus(ctx, client, owner, repo, sha, "pending", "Follow-On Test Status", "The follow-on tests have started")
+    createStatus(ctx, client, owner, repo, sha, target_url, "pending", "Follow-On Test Status", "The follow-on tests have started")
 
     // Simulate some work
     log.Println("The follow-on works!!")
 		time.Sleep(5 * time.Second)
 
     // Update the status to success
-    createStatus(ctx, client, owner, repo, sha, "success", "Follow-On Test Status", "The follow-on tests completed successfully")
+    createStatus(ctx, client, owner, repo, sha, target_url, "success", "Follow-On Test Status", "The follow-on tests completed successfully")
 }
 
-func createStatus(ctx context.Context, client *github.Client, owner, repo, sha, state, context, description string) {
+func createStatus(ctx context.Context, client *github.Client, owner, repo, sha, target_url, state, context, description string) {
     status := &github.RepoStatus{
         State:       github.Ptr(state),
         Context:     github.Ptr(context),
         Description: github.Ptr(description),
+				TargetURL:   github.Ptr(target_url),
     }
 
-		log.Printf("Creating status: state=%s, context=%s, description=%s", *status.State, *status.Context, *status.Description)
+		log.Printf("Creating status: state=%s, context=%s, description=%s, target_url=%s", *status.State, *status.Context, *status.Description, *status.TargetURL)
 		repoStatus, respose, err := client.Repositories.CreateStatus(ctx, owner, repo, sha, status)
 		if err != nil {
 				log.Fatalf("Error creating status: %v", err)
