@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v68/github"
 	"golang.org/x/oauth2"
 )
 
@@ -35,22 +35,26 @@ func main() {
 }
 
 func createCheckRun(ctx context.Context, client *github.Client, owner, repo, sha, status, name, summary string) {
-    checkRun := &github.CreateCheckRunOptions{
-        Name:    name,
-        HeadSHA: sha,
-        Status:  github.String(status),
-        Output: &github.CheckRunOutput{
-            Title:   github.String(name),
-            Summary: github.String(summary),
-        },
-    }
+		checkRun := &github.CreateCheckRunOptions{
+			Name:    name,
+			HeadSHA: sha,
+			Status:  github.Ptr(status),
+			Output: &github.CheckRunOutput{
+				Title:   github.Ptr(name),
+				Summary: github.Ptr(summary),
+			},
+		}
 
     if status == "completed" {
-        checkRun.Conclusion = github.String("success")
+        checkRun.Conclusion = github.Ptr("success")
     }
 
-    _, _, err := client.Checks.CreateCheckRun(ctx, owner, repo, *checkRun)
-    if err != nil {
-        log.Fatalf("Error creating check run: %v", err)
-    }
+		checkRunResult, resp, err := client.Checks.CreateCheckRun(ctx, owner, repo, *checkRun)
+		if err != nil {
+			log.Fatalf("Error creating check run: %v", err)
+		}
+		log.Printf("Check run created: ID=%d, Status=%s, Response Status=%s",
+			checkRunResult.GetID(),
+			checkRunResult.GetStatus(),
+			resp.Status)
 }
