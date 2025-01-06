@@ -1,0 +1,15 @@
+name: Follow-On Tests
+on:
+  workflow_run:
+    workflows: ["Sleep Test Workflow"]
+    types:
+      - completed
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+      - run: echo "The follow-on works!!"
