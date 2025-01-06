@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/google/go-github/v68/github"
 	"golang.org/x/oauth2"
@@ -24,37 +25,30 @@ func main() {
     tc := oauth2.NewClient(ctx, ts)
     client := github.NewClient(tc)
 
-    // Create a check run
-    createCheckRun(ctx, client, owner, repo, sha, "in_progress", "Follow-On Test Status", "The follow-on tests have started")
+    // Create a status for the commit
+    createStatus(ctx, client, owner, repo, sha, "pending", "Follow-On Test Status", "The follow-on tests have started")
 
     // Simulate some work
     log.Println("The follow-on works!!")
+		time.Sleep(5 * time.Second)
 
-    // Update the check run to success
-    createCheckRun(ctx, client, owner, repo, sha, "completed", "Follow-On Test Status", "The follow-on tests completed successfully")
+    // Update the status to success
+    createStatus(ctx, client, owner, repo, sha, "success", "Follow-On Test Status", "The follow-on tests completed successfully")
 }
 
-func createCheckRun(ctx context.Context, client *github.Client, owner, repo, sha, status, name, summary string) {
-		checkRun := &github.CreateCheckRunOptions{
-			Name:    name,
-			HeadSHA: sha,
-			Status:  github.Ptr(status),
-			Output: &github.CheckRunOutput{
-				Title:   github.Ptr(name),
-				Summary: github.Ptr(summary),
-			},
-		}
-
-    if status == "completed" {
-        checkRun.Conclusion = github.Ptr("success")
+func createStatus(ctx context.Context, client *github.Client, owner, repo, sha, state, context, description string) {
+    status := &github.RepoStatus{
+        State:       github.Ptr(state),
+        Context:     github.Ptr(context),
+        Description: github.Ptr(description),
     }
 
-		checkRunResult, resp, err := client.Checks.CreateCheckRun(ctx, owner, repo, *checkRun)
+		log.Printf("Creating status: state=%s, context=%s, description=%s", *status.State, *status.Context, *status.Description)
+		repoStatus, respose, err := client.Repositories.CreateStatus(ctx, owner, repo, sha, status)
 		if err != nil {
-			log.Fatalf("Error creating check run: %v", err)
+				log.Fatalf("Error creating status: %v", err)
 		}
-		log.Printf("Check run created: ID=%d, Status=%s, Response Status=%s",
-			checkRunResult.GetID(),
-			checkRunResult.GetStatus(),
-			resp.Status)
+		log.Printf("Response: %+v", respose)
+		log.Printf("Status response: %+v", repoStatus)
+		log.Printf("Status created successfully")
 }
