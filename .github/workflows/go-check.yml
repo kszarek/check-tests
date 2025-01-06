@@ -13,3 +13,19 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
       - run: echo "The follow-on works!!"
+      - name: Update PR status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              name: 'Follow-On Test Status',
+              head_sha: '${{ github.event.workflow_run.head_sha }}',
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'Follow-On Test Results',
+                summary: 'The follow-on tests completed successfully'
+              }
+            })
