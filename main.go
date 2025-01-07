@@ -54,6 +54,8 @@ func main() {
 			// Check if all checks are complete and successful
 			allChecksPassed := true
 			for _, check := range checks.CheckRuns {
+				// log the check status
+				log.Printf("Check %s status: %s", *check.Name, *check.Status)
 
 				if check.Status != nil && *check.Status != "completed" {
 					allChecksPassed = false
