@@ -11,12 +11,15 @@ import (
 )
 
 func main() {
-    // Get environment variables
-    owner := os.Getenv("GITHUB_REPOSITORY_OWNER")
-    repo := os.Getenv("GITHUB_REPOSITORY_NAME")
-    sha := os.Getenv("GITHUB_SHA")
-    token := os.Getenv("GITHUB_TOKEN")
-		target_url := os.Getenv("GITHUB_TARGET_URL")
+	// Get the GitHub token from the environment variable
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		log.Fatal("GITHUB_TOKEN is not set.")
+	}
+	// Get the owner, repo, and PR number from the environment variables
+	owner := os.Getenv("GITHUB_REPOSITORY_OWNER")
+	repo := os.Getenv("GITHUB_REPOSITORY_NAME")
+	prNumber := os.Getenv("GITHUB_PR_NUMBER")
 
     // Create a new GitHub client
     ctx := context.Background()
@@ -26,31 +29,39 @@ func main() {
     tc := oauth2.NewClient(ctx, ts)
     client := github.NewClient(tc)
 
-    // Create a status for the commit
-    createStatus(ctx, client, owner, repo, sha, target_url, "pending", "Follow-On Test Status", "The follow-on tests have started")
+	// Poll until all checks are finished
+	timeout := time.After(10 * time.Minute)
+	tick := time.Tick(10 * time.Second)
 
-    // Simulate some work
-    log.Println("The follow-on works!!")
-		time.Sleep(5 * time.Second)
+	for {
+		select {
+		case <-timeout:
+			log.Fatal("Timed out waiting for checks to finish.")
+		case <-tick:
+			// Retrieve the check runs for the PR
+			checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, prNumber, &github.ListCheckRunsOptions{})
+			if err != nil {
+				log.Fatalf("Error getting check runs: %v", err)
+			}
 
-    // Update the status to success
-    createStatus(ctx, client, owner, repo, sha, target_url, "success", "Follow-On Test Status", "The follow-on tests completed successfully")
-}
+			// Check if all checks are complete and successful
+			allChecksPassed := true
+			for _, check := range checks.CheckRuns {
+				if check.Status != nil && *check.Status != "completed" {
+					allChecksPassed = false
+					break
+				}
+				if check.Conclusion != nil && *check.Conclusion != "success" {
+					allChecksPassed = false
+					break
+				}
+			}
 
-func createStatus(ctx context.Context, client *github.Client, owner, repo, sha, target_url, state, context, description string) {
-    status := &github.RepoStatus{
-        State:       github.Ptr(state),
-        Context:     github.Ptr(context),
-        Description: github.Ptr(description),
-				TargetURL:   github.Ptr(target_url),
-    }
-
-		log.Printf("Creating status: state=%s, context=%s, description=%s, target_url=%s", *status.State, *status.Context, *status.Description, *status.TargetURL)
-		repoStatus, respose, err := client.Repositories.CreateStatus(ctx, owner, repo, sha, status)
-		if err != nil {
-				log.Fatalf("Error creating status: %v", err)
+			// If all checks are complete and successful, exit successfully
+			if allChecksPassed {
+				log.Println("All checks have passed!")
+				return
+			}
 		}
-		log.Printf("Response: %+v", respose)
-		log.Printf("Status response: %+v", repoStatus)
-		log.Printf("Status created successfully")
+	}
 }
