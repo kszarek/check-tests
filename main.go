@@ -19,15 +19,16 @@ func main() {
 	// Get the owner, repo, and PR number from the environment variables
 	owner := os.Getenv("GITHUB_REPOSITORY_OWNER")
 	repo := os.Getenv("GITHUB_REPOSITORY_NAME")
-	prNumber := os.Getenv("GITHUB_PR_NUMBER")
+	// prNumber := os.Getenv("GITHUB_PR_NUMBER")
+	gitSha := os.Getenv("GITHUB_SHA")
 
-    // Create a new GitHub client
-    ctx := context.Background()
-    ts := oauth2.StaticTokenSource(
-        &oauth2.Token{AccessToken: token},
-    )
-    tc := oauth2.NewClient(ctx, ts)
-    client := github.NewClient(tc)
+	// Create a new GitHub client
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
 
 	// Poll until all checks are finished
 	timeout := time.After(10 * time.Minute)
@@ -38,8 +39,8 @@ func main() {
 		case <-timeout:
 			log.Fatal("Timed out waiting for checks to finish.")
 		case <-tick:
-			// Retrieve the check runs for the PR
-			checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, prNumber, &github.ListCheckRunsOptions{})
+			// Retrieve the check runs for the PR's head SHA
+			checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, gitSha, &github.ListCheckRunsOptions{})
 			if err != nil {
 				log.Fatalf("Error getting check runs: %v", err)
 			}
