@@ -8,5 +8,5 @@ jobs:
   sleep-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep for 5 seconds
-        run: sleep 5
+      - name: Sleep for 20 seconds
+        run: sleep 20
