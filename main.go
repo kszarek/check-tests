@@ -22,6 +22,12 @@ func main() {
 	// prNumber := os.Getenv("GITHUB_PR_NUMBER")
 	gitSha := os.Getenv("GITHUB_SHA")
 
+	// Get the check name from the environment variable
+	checkName := os.Getenv("TERRAFORM_CHECK_NAME")
+	if checkName == "" {
+		log.Fatal("TERRAFORM_CHECK_NAME is not set.")
+	}
+
 	// Create a new GitHub client
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -48,13 +54,22 @@ func main() {
 			// Check if all checks are complete and successful
 			allChecksPassed := true
 			for _, check := range checks.CheckRuns {
+				// log the check status
+				log.Printf("Check %s status: %s", *check.Name, *check.Status)
+
 				if check.Status != nil && *check.Status != "completed" {
 					allChecksPassed = false
 					break
 				}
+
 				if check.Conclusion != nil && *check.Conclusion != "success" {
 					allChecksPassed = false
 					break
+				}
+
+				// Find the check run with the specified name and log its URL
+				if check.Name != nil && *check.Name == checkName {
+					log.Printf("URL for check run %s: %s", checkName, *check.HTMLURL)
 				}
 			}
 

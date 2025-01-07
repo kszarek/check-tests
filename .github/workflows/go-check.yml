@@ -25,4 +25,5 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TERRAFORM_CHECK_NAME: "Sleep Test Workflow"
         run: go run main.go
