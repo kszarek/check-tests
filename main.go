@@ -50,6 +50,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Error getting check runs: %v", err)
 			}
+			log.Printf("Found %d check runs", len(checks.CheckRuns))
 
 			for _, check := range checks.CheckRuns {
 				// log the check status
@@ -71,7 +72,6 @@ func main() {
 					return
 				}
 			}
-
 		}
 	}
 }
